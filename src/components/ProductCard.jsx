@@ -35,8 +35,6 @@ function ProductCard({ product }) {
         {product.standardWeight && (
           <p className="product-weight">Trọng lượng: {product.standardWeight}g</p>
         )}
-        {/* Bỏ dòng hiển thị giá */}
-        {/* <p className="product-price">{formatCurrency(product.basePrice)}</p> */}
         <button 
           className="quote-btn"
           onClick={handleRequestQuote}
