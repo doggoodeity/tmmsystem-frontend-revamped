@@ -60,17 +60,13 @@ const completeCustomerProfile = async (profileData, token) => {
       },
     });
 
-    // ✅ Sau khi cập nhật thành công, cập nhật lại localStorage
     if (profileData.companyName) {
       localStorage.setItem('companyName', profileData.companyName);
     }
 
-    // ✅ Thêm bước cập nhật user sau khi hoàn tất profile
     const updatedUser = getCurrentUser();
     updatedUser.companyName = profileData.companyName;
     updatedUser.needsProfileCompletion = false;
-    // Không cần set lại toàn bộ vì hàm getCurrentUser đọc từ localStorage,
-    // chỉ cần đảm bảo companyName đã có
 
     return response.data;
   } catch (error) {
@@ -95,6 +91,10 @@ const logout = () => {
 };
 
 const getCurrentToken = () => {
+  return localStorage.getItem('userToken');
+};
+
+const getToken = () => {
   return localStorage.getItem('userToken');
 };
 
@@ -123,5 +123,6 @@ export const authService = {
   completeCustomerProfile,
   logout,
   getCurrentToken,
+  getToken,
   getCurrentUser,
 };

@@ -1,15 +1,19 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/ProductCard.css';
 
-const formatCurrency = (amount) => {
-  if (amount == null) return 'Liên hệ';
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-};
-
 function ProductCard({ product }) {
+  const navigate = useNavigate();
+  
   const imageUrl =
     product.imageUrl ||
     `https://placehold.co/300x200/e9ecef/495057?text=${product.code || 'Image'}`;
+
+  const handleRequestQuote = () => {
+    navigate('/customer/create-rfq', { 
+      state: { product } 
+    });
+  };
 
   return (
     <div className="product-card">
@@ -31,7 +35,14 @@ function ProductCard({ product }) {
         {product.standardWeight && (
           <p className="product-weight">Trọng lượng: {product.standardWeight}g</p>
         )}
-        <p className="product-price">{formatCurrency(product.basePrice)}</p>
+        {/* Bỏ dòng hiển thị giá */}
+        {/* <p className="product-price">{formatCurrency(product.basePrice)}</p> */}
+        <button 
+          className="quote-btn"
+          onClick={handleRequestQuote}
+        >
+          Yêu cầu báo giá
+        </button>
       </div>
     </div>
   );
