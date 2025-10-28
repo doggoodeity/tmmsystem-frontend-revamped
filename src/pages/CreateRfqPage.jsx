@@ -261,23 +261,34 @@ function CreateRfqPage() {
         console.log('API failed, using mock success:', apiError.message);
         
         const existingRfqs = JSON.parse(localStorage.getItem('mockRfqs') || '[]');
+        const rfqId = Date.now();
+        const quotationId = rfqId + 1000;
+        
         const newRfq = {
-          id: Date.now(),
+          id: rfqId,
           rfqNumber: `RFQ-2025-${String(existingRfqs.length + 1).padStart(3, '0')}`,
-          status: 'PENDING',
+          status: 'QUOTED', // Set to QUOTED immediately for demo
           expectedDeliveryDate: rfqData.desiredDeliveryDate,
           createdAt: new Date().toISOString(),
           details: rfqData.items.map((item, index) => {
             const product = products.find(p => p.id == item.productId);
+            const selectedRfqItem = rfqItems.find(rfqItem => rfqItem.productId == item.productId);
             return {
-              id: Date.now() + index,
+              id: rfqId + index + 10,
               productId: item.productId,
               productName: product?.name || 'Unknown Product',
               quantity: item.quantity,
-              unit: 'cái'
+              unit: 'cái',
+              size: selectedRfqItem?.sizeName || '30x50cm'
             };
-          })
+          }),
+          // IMPORTANT: Add quotation info for demo
+          quotation: {
+            id: quotationId,
+            available: true
+          }
         };
+        
         existingRfqs.push(newRfq);
         localStorage.setItem('mockRfqs', JSON.stringify(existingRfqs));
         
@@ -412,10 +423,6 @@ function CreateRfqPage() {
                 {item.errors.productId && (
                   <span className="error-message">{item.errors.productId}</span>
                 )}
-                
-                <small style={{color: '#666', fontSize: '12px'}}>
-                  Debug: ProductId={item.productId}, Sizes={item.availableSizes.length}, Loading={item.isLoadingSizes.toString()}
-                </small>
               </div>
 
               <div className="form-group">

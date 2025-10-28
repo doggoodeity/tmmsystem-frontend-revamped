@@ -223,7 +223,6 @@
   transform: translateY(-1px);
 }
 
-/* Debug info styling */
 .form-group small {
   font-size: 11px;
   color: #9ca3af;
@@ -231,7 +230,6 @@
   font-family: monospace;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .rfq-container {
     padding: 24px 20px;

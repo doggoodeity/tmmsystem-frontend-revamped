@@ -48,11 +48,10 @@ const getProductSizes = async (productId) => {
       }
     }
 
-    // Fallback với text ngắn hơn
     console.log('All endpoints failed, returning default size');
     return [{ 
       id: 'standard', 
-      name: '30 x 50 cm' // Chỉ hiển thị kích thước, bỏ "Kích thước tiêu chuẩn"
+      name: '30 x 50 cm'
     }];
     
   } catch (error) {

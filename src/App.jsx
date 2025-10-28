@@ -6,7 +6,10 @@ import CompleteProfilePage from './pages/CompleteProfilePage.jsx';
 import CustomerLayout from './components/CustomerLayout.jsx';
 import CustomerHomePage from './pages/CustomerHomePage.jsx';
 import CreateRfqPage from './pages/CreateRfqPage.jsx';
-import CustomerRfqListPage from './pages/CustomerRfqListPage.jsx';
+import RfqManagementPage from './pages/RfqManagementPage.jsx';
+import QuotationDetailPage from './pages/QuotationDetailPage.jsx';
+import OrderDetailPage from './pages/OrderDetailPage.jsx';
+import OrderListPage from './pages/OrderListPage.jsx';
 import { authService } from './api/authService.js';
 
 function ProtectedRoute({ allowedRoles }) {
@@ -48,9 +51,11 @@ function App() {
           <Route element={<LayoutRoute LayoutComponent={CustomerLayout} />}>
             <Route path="/customer/dashboard" element={<CustomerHomePage />} />
             <Route path="/customer/create-rfq" element={<CreateRfqPage />} />
-            <Route path="/customer/rfqs" element={<CustomerRfqListPage />} />
+            <Route path="/customer/rfqs" element={<RfqManagementPage />} />
+            <Route path="/customer/quotations/:id" element={<QuotationDetailPage />} />
+            <Route path="/customer/orders" element={<OrderListPage />} />
+            <Route path="/customer/orders/:id" element={<OrderDetailPage />} />
             <Route path="/customer/profile" element={<div>Customer Profile Page Placeholder</div>} />
-            <Route path="/customer/orders" element={<div>Customer Orders Page Placeholder</div>} />
           </Route>
         </Route>
 
