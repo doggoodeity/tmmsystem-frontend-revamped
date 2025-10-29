@@ -31,19 +31,21 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
 
-            {/* Internal routes - NO AUTH GUARD */}
-            <Route path="/internal/quotations" element={<QuotesList />} />
-            <Route path="/internal/quotations/:id" element={<QuoteDetail />} />
-            <Route path="/internal/quote-requests" element={<QuoteRequests />} />
-
-            {/* Customer routes - NO AUTH GUARD */}
+            {/* Customer routes */}
             <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+            <Route path="/customer/quote-request" element={<QuoteRequest />} />
             <Route path="/customer/quotations" element={<CustomerQuotations />} />
             <Route path="/customer/quotations/:id" element={<CustomerQuotationDetail />} />
 
-            {/* Planning routes - NO AUTH GUARD */}
+            {/* Internal routes */}
+            <Route path="/internal/dashboard" element={<InternalDashboard />} />
+            <Route path="/internal/quotations" element={<QuotesList />} />
+            <Route path="/internal/quotations/:id" element={<QuoteDetail />} />
+            <Route path="/internal/quote-requests" element={<QuoteRequests />} />
+            <Route path="/internal/rfq/:id" element={<RFQDetail />} />
+
+            {/* Planning routes */}
             <Route path="/planning/quote-requests" element={<PlanningQuoteRequests />} />
             <Route path="/planning/rfq/:id" element={<PlanningRFQDetail />} />
 
