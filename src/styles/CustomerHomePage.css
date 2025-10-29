@@ -44,10 +44,10 @@
     font-size: 1.1em;
     color: #6c757d;
 }
+
 .error-message {
     color: #dc3545;
 }
-
 
 .product-grid {
     display: grid;
@@ -74,7 +74,6 @@
      }
 }
 
-
 @media (max-width: 576px) { /* Mobile nhỏ */
     .customer-home-page {
         padding: 15px;
@@ -90,5 +89,28 @@
      .category-dropdown {
          min-width: 100%;
      }
+}
 
+/* Product Card Hover Effects */
+.product-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Customer Layout */
+.customer-layout {
+    min-height: 100vh;
+}
+
+.sidebar-item {
+    transition: all 0.3s ease;
+}
+
+.sidebar-item:hover {
+    background-color: #e9ecef !important;
+    color: #495057 !important;
 }
