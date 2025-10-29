@@ -68,7 +68,7 @@ const LoginPage = () => {
                     navigate('/planning/quote-requests');
                 } else {
                     console.log('Routing to sales dashboard (default)');
-                    navigate('/internal/quotes');
+                    navigate('/internal/quote-requests'); // FIXED: Changed from /internal/quotes
                 }
             }
         } catch (err) {

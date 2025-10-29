@@ -1,6 +1,6 @@
 import React from 'react';
 import { Nav } from 'react-bootstrap';
-import { FaUserTie, FaFileInvoice, FaShoppingCart, FaTruck, FaClipboardList } from 'react-icons/fa';
+import { FaUserTie, FaFileInvoice, FaShoppingCart, FaTruck, FaClipboardList, FaReceipt } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const InternalSidebar = () => {
@@ -17,8 +17,14 @@ const InternalSidebar = () => {
     {
       icon: FaClipboardList,
       label: 'Yêu cầu báo giá',
-      path: '/internal/quotes',
-      isActive: location.pathname === '/internal/quotes' || location.pathname.includes('/internal/rfq-detail')
+      path: '/internal/quote-requests',
+      isActive: location.pathname === '/internal/quote-requests' || location.pathname.includes('/internal/rfq-detail')
+    },
+    {
+      icon: FaReceipt, // New icon for Báo giá list
+      label: 'Báo giá',
+      path: '/internal/quotations',
+      isActive: location.pathname === '/internal/quotations' || location.pathname.includes('/internal/quotations/')
     },
     {
       icon: FaFileInvoice,

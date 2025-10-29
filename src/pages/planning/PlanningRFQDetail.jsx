@@ -218,7 +218,7 @@ const PlanningRFQDetail = () => {
       
       // Update RFQ status to QUOTED
       // TODO: Update this API call to set status to 'QUOTED'
-      await quoteService.sendRFQToPlanningDepartment(id);
+      await quoteService.updateRFQStatus(id, 'QUOTED');
       
       setSuccess('✅ Báo giá đã được tạo và gửi thành công!');
       handleCloseQuoteModal();

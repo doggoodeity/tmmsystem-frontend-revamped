@@ -171,22 +171,8 @@ export const quoteService = {
             console.log(`=== SENDING RFQ TO PLANNING ===`);
             console.log(`RFQ ID: ${rfqId}`);
 
-            // First, get the current RFQ data
-            const currentRFQ = await apiClient.get(`/v1/rfqs/${rfqId}`);
-            console.log('Current RFQ data:', currentRFQ.data);
-
-            // Update only the status and isSent fields
-            const payload = {
-                ...currentRFQ.data,
-                status: 'SENT',
-                isSent: true,
-                updatedAt: new Date().toISOString()
-            };
-
-            console.log('Update payload:', payload);
-            console.log(`Making PUT request to: /v1/rfqs/${rfqId}`);
-
-            const response = await apiClient.put(`/v1/rfqs/${rfqId}`, payload);
+            // Use the correct backend endpoint
+            const response = await apiClient.post(`/v1/rfqs/${rfqId}/forward-to-planning`);
 
             console.log('Send RFQ response status:', response.status);
             console.log('Send RFQ response data:', response.data);
@@ -202,13 +188,17 @@ export const quoteService = {
         }
     },
 
-    // Get pricing data for quote calculation
+    // Get pricing data for quote calculation - FIXED ENDPOINT
     getQuotePricing: async (rfqId) => {
         try {
             console.log(`=== FETCHING QUOTE PRICING ===`);
             console.log(`RFQ ID: ${rfqId}`);
 
-            const response = await apiClient.get(`/v1/quotes/pricing/${rfqId}`);
+            // FIXED: Use calculate-price endpoint
+            const response = await apiClient.post(`/v1/quotations/calculate-price`, {
+                rfqId: rfqId,
+                profitMargin: 0 // Default 0% for initial pricing
+            });
 
             console.log('Quote pricing response:', response.data);
             return response.data;
@@ -220,13 +210,19 @@ export const quoteService = {
         }
     },
 
-    // Create a new quote
+    // Create a new quote - FIXED ENDPOINT AND PAYLOAD
     createQuote: async (quoteData) => {
         try {
             console.log(`=== CREATING QUOTE ===`);
             console.log('Quote data:', quoteData);
 
-            const response = await apiClient.post(`/v1/quotes`, quoteData);
+            // FIXED: Use create-from-rfq endpoint with correct payload
+            const response = await apiClient.post(`/v1/quotations/create-from-rfq`, {
+                rfqId: quoteData.rfqId,
+                planningUserId: parseInt(localStorage.getItem('userId')) || 1,
+                profitMargin: quoteData.profitMargin || 0,
+                capacityCheckNotes: quoteData.notes || 'Capacity checked by Planning Department'
+            });
 
             console.log('Create quote response:', response.data);
             return response.data;
@@ -238,13 +234,14 @@ export const quoteService = {
         }
     },
 
-    // Calculate quote price
+    // Calculate quote price - FIXED ENDPOINT
     calculateQuotePrice: async (rfqId, profitMargin) => {
         try {
             console.log(`=== CALCULATING QUOTE PRICE ===`);
             console.log(`RFQ ID: ${rfqId}, Profit Margin: ${profitMargin}%`);
 
-            const response = await apiClient.post(`/v1/quotes/calculate`, {
+            // FIXED: Use recalculate-price endpoint
+            const response = await apiClient.post(`/v1/quotations/recalculate-price`, {
                 rfqId: rfqId,
                 profitMargin: profitMargin
             });
@@ -259,13 +256,14 @@ export const quoteService = {
         }
     },
 
-    // Get quote details by quote ID
+    // Get quote details by quote ID - FIXED ENDPOINT
     getQuoteDetails: async (quoteId) => {
         try {
             console.log(`=== FETCHING QUOTE DETAILS ===`);
             console.log(`Quote ID: ${quoteId}`);
 
-            const response = await apiClient.get(`/v1/quotes/${quoteId}`);
+            // FIXED: Use correct endpoint
+            const response = await apiClient.get(`/v1/quotations/${quoteId}`);
 
             console.log('Quote details response:', response.data);
             return response.data;
@@ -283,10 +281,12 @@ export const quoteService = {
             console.log(`=== FETCHING QUOTES FOR RFQ ===`);
             console.log(`RFQ ID: ${rfqId}`);
 
-            const response = await apiClient.get(`/v1/quotes/rfq/${rfqId}`);
+            // This endpoint might not exist, fallback to getting all quotes and filtering
+            const allQuotes = await apiClient.get('/v1/quotations');
+            const rfqQuotes = allQuotes.data.filter(quote => quote.rfqId === parseInt(rfqId));
 
-            console.log('RFQ quotes response:', response.data);
-            return response.data;
+            console.log('RFQ quotes response:', rfqQuotes);
+            return rfqQuotes;
         } catch (error) {
             console.error('=== RFQ QUOTES FETCH ERROR ===');
             console.error('Status:', error.response?.status);
@@ -295,13 +295,14 @@ export const quoteService = {
         }
     },
 
-    // Send quote to customer
+    // Send quote to customer - FIXED ENDPOINT
     sendQuoteToCustomer: async (quoteId) => {
         try {
             console.log(`=== SENDING QUOTE TO CUSTOMER ===`);
             console.log(`Quote ID: ${quoteId}`);
 
-            const response = await apiClient.put(`/v1/quotes/${quoteId}/send-to-customer`);
+            // FIXED: Use correct endpoint
+            const response = await apiClient.post(`/v1/quotations/${quoteId}/send-to-customer`);
 
             console.log('Send quote response:', response.data);
             return response.data;
@@ -313,20 +314,105 @@ export const quoteService = {
         }
     },
 
-    // Get all quotes (for Sales Staff)
+    // Get all quotes (for Sales Staff) - FIXED ENDPOINT
     getAllQuotes: async () => {
         try {
-            console.log(`=== FETCHING ALL QUOTES ===`);
+            console.log(`=== FETCHING ALL QUOTATIONS ===`);
 
-            const response = await apiClient.get('/v1/quotes');
+            // FIXED: Use correct endpoint
+            const response = await apiClient.get('/v1/quotations');
 
-            console.log('All quotes response:', response.data);
+            console.log('All quotations response:', response.data);
             return response.data;
         } catch (error) {
-            console.error('=== GET ALL QUOTES ERROR ===');
+            console.error('=== GET ALL QUOTATIONS ERROR ===');
             console.error('Status:', error.response?.status);
             console.error('Error Data:', error.response?.data);
             throw new Error(error.response?.data?.message || 'Lỗi khi tải danh sách báo giá');
+        }
+    },
+
+    // Update quotation status (Accept/Reject) - FIXED ENDPOINTS
+    updateQuotationStatus: async (quotationId, status) => {
+        try {
+            console.log(`=== UPDATING QUOTATION STATUS ===`);
+            console.log(`Quotation ID: ${quotationId}, New Status: ${status}`);
+
+            if (status === 'ACCEPTED') {
+                // FIXED: Use approve endpoint
+                const response = await apiClient.post(`/v1/quotations/${quotationId}/approve`);
+                console.log('Quotation approve response:', response.data);
+                return response.data;
+            } else if (status === 'REJECTED') {
+                // FIXED: Use reject endpoint
+                const response = await apiClient.post(`/v1/quotations/${quotationId}/reject`);
+                console.log('Quotation reject response:', response.data);
+                return response.data;
+            } else {
+                throw new Error('Invalid quotation status');
+            }
+        } catch (error) {
+            console.error('=== QUOTATION STATUS UPDATE ERROR ===');
+            console.error('Status:', error.response?.status);
+            console.error('Error Data:', error.response?.data);
+            throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật trạng thái báo giá');
+        }
+    },
+
+    // Create order from accepted quotation - FIXED ENDPOINT
+    createOrderFromQuotation: async (orderData) => {
+        try {
+            console.log(`=== CREATING ORDER FROM QUOTATION ===`);
+            console.log('Order data:', orderData);
+
+            // FIXED: Use the backend's automatic order creation
+            const response = await apiClient.post(`/v1/quotations/${orderData.quotationId}/create-order`);
+
+            console.log('Create order response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('=== CREATE ORDER ERROR ===');
+            console.error('Status:', error.response?.status);
+            console.error('Error Data:', error.response?.data);
+            throw new Error(error.response?.data?.message || 'Lỗi khi tạo đơn hàng');
+        }
+    },
+
+    // Get customer quotations - FIXED ENDPOINT
+    getCustomerQuotations: async (customerId) => {
+        try {
+            console.log(`=== FETCHING CUSTOMER QUOTATIONS ===`);
+            console.log(`Customer ID: ${customerId}`);
+
+            // FIXED: Use correct endpoint
+            const response = await apiClient.get(`/v1/quotations/customer/${customerId}`);
+
+            console.log('Customer quotations response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('=== CUSTOMER QUOTATIONS FETCH ERROR ===');
+            console.error('Status:', error.response?.status);
+            console.error('Error Data:', error.response?.data);
+            throw new Error(error.response?.data?.message || 'Lỗi khi tải danh sách báo giá');
+        }
+    },
+
+    // Get customer orders - PLACEHOLDER (may not exist yet)
+    getCustomerOrders: async (customerId) => {
+        try {
+            console.log(`=== FETCHING CUSTOMER ORDERS ===`);
+            console.log(`Customer ID: ${customerId}`);
+
+            // This endpoint might not exist yet
+            const response = await apiClient.get(`/v1/orders/customer/${customerId}`);
+
+            console.log('Customer orders response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('=== CUSTOMER ORDERS FETCH ERROR ===');
+            console.error('Status:', error.response?.status);
+            console.error('Error Data:', error.response?.data);
+            throw new Error(error.response?.data?.message || 'Lỗi khi tải danh sách đơn hàng');
         }
     },
 };
