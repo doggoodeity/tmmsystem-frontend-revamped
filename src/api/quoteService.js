@@ -42,7 +42,7 @@ export const quoteService = {
             const rfqNumber = `RFQ-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${timestamp.toString().slice(-6)}`;
 
             const payload = {
-                rfqNumber: rfqNumber, // Add the missing rfqNumber
+                rfqNumber: rfqNumber,
                 customerId: rfqData.customerId,
                 expectedDeliveryDate: rfqData.expectedDeliveryDate,
                 status: 'DRAFT',
@@ -149,6 +149,51 @@ export const quoteService = {
         }
     },
 
+    // RFQ workflow endpoints (required for Planning quotation creation)
+    sendRfq: async (rfqId) => {
+        try {
+            console.log(`Sending RFQ ${rfqId}...`);
+            const response = await apiClient.post(`/v1/rfqs/${rfqId}/send`);
+            return response.data;
+        } catch (error) {
+            console.error('Send RFQ error:', error);
+            throw new Error(error.response?.data?.message || 'Lỗi khi gửi RFQ');
+        }
+    },
+
+    preliminaryCheck: async (rfqId) => {
+        try {
+            console.log(`Preliminary checking RFQ ${rfqId}...`);
+            const response = await apiClient.post(`/v1/rfqs/${rfqId}/preliminary-check`);
+            return response.data;
+        } catch (error) {
+            console.error('Preliminary check error:', error);
+            throw new Error(error.response?.data?.message || 'Lỗi khi kiểm tra sơ bộ RFQ');
+        }
+    },
+
+    forwardToPlanning: async (rfqId) => {
+        try {
+            console.log(`Forwarding RFQ ${rfqId} to Planning...`);
+            const response = await apiClient.post(`/v1/rfqs/${rfqId}/forward-to-planning`);
+            return response.data;
+        } catch (error) {
+            console.error('Forward to planning error:', error);
+            throw new Error(error.response?.data?.message || 'Lỗi khi chuyển RFQ đến Planning');
+        }
+    },
+
+    receiveByPlanning: async (rfqId) => {
+        try {
+            console.log(`Planning receiving RFQ ${rfqId}...`);
+            const response = await apiClient.post(`/v1/rfqs/${rfqId}/receive-by-planning`);
+            return response.data;
+        } catch (error) {
+            console.error('Receive by planning error:', error);
+            throw new Error(error.response?.data?.message || 'Lỗi khi Planning nhận RFQ');
+        }
+    },
+
     // Update RFQ status (for sales staff operations)
     updateRFQStatus: async (rfqId, status) => {
         try {
@@ -194,7 +239,6 @@ export const quoteService = {
             console.log(`=== FETCHING QUOTE PRICING ===`);
             console.log(`RFQ ID: ${rfqId}`);
 
-            // FIXED: Use calculate-price endpoint
             const response = await apiClient.post(`/v1/quotations/calculate-price`, {
                 rfqId: rfqId,
                 profitMargin: 0 // Default 0% for initial pricing
@@ -216,7 +260,6 @@ export const quoteService = {
             console.log(`=== CREATING QUOTE ===`);
             console.log('Quote data:', quoteData);
 
-            // FIXED: Use create-from-rfq endpoint with correct payload
             const response = await apiClient.post(`/v1/quotations/create-from-rfq`, {
                 rfqId: quoteData.rfqId,
                 planningUserId: parseInt(localStorage.getItem('userId')) || 1,
@@ -240,7 +283,6 @@ export const quoteService = {
             console.log(`=== CALCULATING QUOTE PRICE ===`);
             console.log(`RFQ ID: ${rfqId}, Profit Margin: ${profitMargin}%`);
 
-            // FIXED: Use recalculate-price endpoint
             const response = await apiClient.post(`/v1/quotations/recalculate-price`, {
                 rfqId: rfqId,
                 profitMargin: profitMargin
@@ -262,7 +304,6 @@ export const quoteService = {
             console.log(`=== FETCHING QUOTE DETAILS ===`);
             console.log(`Quote ID: ${quoteId}`);
 
-            // FIXED: Use correct endpoint
             const response = await apiClient.get(`/v1/quotations/${quoteId}`);
 
             console.log('Quote details response:', response.data);
@@ -275,33 +316,12 @@ export const quoteService = {
         }
     },
 
-    // Get quotes for specific RFQ
-    getQuotesForRFQ: async (rfqId) => {
-        try {
-            console.log(`=== FETCHING QUOTES FOR RFQ ===`);
-            console.log(`RFQ ID: ${rfqId}`);
-
-            // This endpoint might not exist, fallback to getting all quotes and filtering
-            const allQuotes = await apiClient.get('/v1/quotations');
-            const rfqQuotes = allQuotes.data.filter(quote => quote.rfqId === parseInt(rfqId));
-
-            console.log('RFQ quotes response:', rfqQuotes);
-            return rfqQuotes;
-        } catch (error) {
-            console.error('=== RFQ QUOTES FETCH ERROR ===');
-            console.error('Status:', error.response?.status);
-            console.error('Error Data:', error.response?.data);
-            throw new Error(error.response?.data?.message || 'Lỗi khi tải báo giá cho RFQ');
-        }
-    },
-
     // Send quote to customer - FIXED ENDPOINT
     sendQuoteToCustomer: async (quoteId) => {
         try {
             console.log(`=== SENDING QUOTE TO CUSTOMER ===`);
             console.log(`Quote ID: ${quoteId}`);
 
-            // FIXED: Use correct endpoint
             const response = await apiClient.post(`/v1/quotations/${quoteId}/send-to-customer`);
 
             console.log('Send quote response:', response.data);
@@ -319,7 +339,6 @@ export const quoteService = {
         try {
             console.log(`=== FETCHING ALL QUOTATIONS ===`);
 
-            // FIXED: Use correct endpoint
             const response = await apiClient.get('/v1/quotations');
 
             console.log('All quotations response:', response.data);
@@ -339,12 +358,10 @@ export const quoteService = {
             console.log(`Quotation ID: ${quotationId}, New Status: ${status}`);
 
             if (status === 'ACCEPTED') {
-                // FIXED: Use approve endpoint
                 const response = await apiClient.post(`/v1/quotations/${quotationId}/approve`);
                 console.log('Quotation approve response:', response.data);
                 return response.data;
             } else if (status === 'REJECTED') {
-                // FIXED: Use reject endpoint
                 const response = await apiClient.post(`/v1/quotations/${quotationId}/reject`);
                 console.log('Quotation reject response:', response.data);
                 return response.data;
@@ -365,7 +382,6 @@ export const quoteService = {
             console.log(`=== CREATING ORDER FROM QUOTATION ===`);
             console.log('Order data:', orderData);
 
-            // FIXED: Use the backend's automatic order creation
             const response = await apiClient.post(`/v1/quotations/${orderData.quotationId}/create-order`);
 
             console.log('Create order response:', response.data);
@@ -384,7 +400,6 @@ export const quoteService = {
             console.log(`=== FETCHING CUSTOMER QUOTATIONS ===`);
             console.log(`Customer ID: ${customerId}`);
 
-            // FIXED: Use correct endpoint
             const response = await apiClient.get(`/v1/quotations/customer/${customerId}`);
 
             console.log('Customer quotations response:', response.data);
@@ -397,13 +412,12 @@ export const quoteService = {
         }
     },
 
-    // Get customer orders - PLACEHOLDER (may not exist yet)
+    // Get customer orders
     getCustomerOrders: async (customerId) => {
         try {
             console.log(`=== FETCHING CUSTOMER ORDERS ===`);
             console.log(`Customer ID: ${customerId}`);
 
-            // This endpoint might not exist yet
             const response = await apiClient.get(`/v1/orders/customer/${customerId}`);
 
             console.log('Customer orders response:', response.data);

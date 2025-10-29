@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import PlanningRFQDetail from './pages/planning/PlanningRFQDetail';
 import QuoteManagement from './pages/internal/QuoteManagement';
 import QuotesList from './pages/internal/QuotesList';
+import CustomerQuotationDetail from './pages/customer/CustomerQuotationDetail';
 import QuoteDetail from './pages/internal/QuoteDetail';
 
 // Auth Pages
@@ -28,29 +29,26 @@ function App() {
       <Router>
         <div className="main-container">
           <Routes>
-            {/* Auth Routes */}
+            {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
-            
-            {/* Customer Routes */}
-            <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-            <Route path="/customer/quote-request" element={<QuoteRequest />} />
-            <Route path="/customer/quotations" element={<CustomerQuotations />} />
-            
-            {/* Internal Staff Routes */}
-            <Route path="/internal/dashboard" element={<InternalDashboard />} />
-            <Route path="/internal/quote-requests" element={<QuoteRequests />} />
-            <Route path="/internal/rfq-detail/:id" element={<RFQDetail />} />
-            
-            {/* Planning Department Routes */}
-            <Route path="/planning/quote-requests" element={<PlanningQuoteRequests />} />
-            <Route path="/planning/rfq-detail/:id" element={<PlanningRFQDetail />} />
-            
-            {/* Default Routes */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-            <Route path="/internal/quotes/management" element={<QuoteManagement />} />
+            <Route path="/register" element={<RegisterPage />} />
+
+            {/* Internal routes - NO AUTH GUARD */}
             <Route path="/internal/quotations" element={<QuotesList />} />
             <Route path="/internal/quotations/:id" element={<QuoteDetail />} />
+            <Route path="/internal/quote-requests" element={<QuoteRequests />} />
+
+            {/* Customer routes - NO AUTH GUARD */}
+            <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+            <Route path="/customer/quotations" element={<CustomerQuotations />} />
+            <Route path="/customer/quotations/:id" element={<CustomerQuotationDetail />} />
+
+            {/* Planning routes - NO AUTH GUARD */}
+            <Route path="/planning/quote-requests" element={<PlanningQuoteRequests />} />
+            <Route path="/planning/rfq/:id" element={<PlanningRFQDetail />} />
+
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/login" />} />
           </Routes>
         </div>
       </Router>

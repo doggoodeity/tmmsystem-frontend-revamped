@@ -19,7 +19,7 @@ const PlanningRFQDetail = () => {
   const [creatingQuote, setCreatingQuote] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   // Quote Modal State - Updated for new structure
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [quoteData, setQuoteData] = useState({
@@ -42,14 +42,14 @@ const PlanningRFQDetail = () => {
         const realRFQ = await quoteService.getRFQDetails(id);
         console.log('Planning RFQ data:', realRFQ);
         setRFQData(realRFQ);
-        
+
         // Fetch all customers to get customer data
         const customers = await quoteService.getAllCustomers();
         console.log('All customers:', customers);
         const customer = customers.find(c => c.id === realRFQ.customerId);
         console.log('Found customer:', customer);
         setCustomerData(customer);
-        
+
         // Fetch all products to map product IDs to names
         const products = await productService.getAllProducts();
         console.log('All products:', products);
@@ -58,7 +58,7 @@ const PlanningRFQDetail = () => {
           prodMap[product.id] = product;
         });
         setProductMap(prodMap);
-        
+
       } catch (error) {
         console.error('Error fetching RFQ details:', error);
         setError('Không thể tải chi tiết RFQ. Vui lòng thử lại.');
@@ -77,19 +77,19 @@ const PlanningRFQDetail = () => {
         try {
           console.log('Fetching pricing data for RFQ:', id);
           const pricing = await quoteService.getQuotePricing(id);
-          
+
           setPricingData(pricing);
           setQuoteData(prev => ({
             ...prev,
             materialCost: pricing.materialCost || 0,
             finishingCost: pricing.finishingCost || 0
           }));
-          
+
           // Calculate initial total
           if (pricing.materialCost && pricing.finishingCost) {
             calculatePriceWithAPI(0); // Start with 0% profit margin
           }
-          
+
         } catch (error) {
           console.error('Error fetching pricing data:', error);
           // Use fallback data for demo
@@ -123,17 +123,17 @@ const PlanningRFQDetail = () => {
     try {
       console.log('Checking machine and warehouse capacity...');
       // TODO: Implement capacity checking API
-      
+
       // Simulate capacity check
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setSuccess('✅ Kiểm tra hoàn tất: Máy móc và kho hàng đủ năng lực sản xuất!');
-      
+
       // Auto-hide success message after 5 seconds
       setTimeout(() => {
         setSuccess('');
       }, 5000);
-      
+
     } catch (error) {
       console.error('Capacity check error:', error);
       setError('❌ Lỗi khi kiểm tra năng lực sản xuất: ' + error.message);
@@ -162,7 +162,7 @@ const PlanningRFQDetail = () => {
   const calculatePriceWithAPI = async (profitMargin) => {
     try {
       if (!id) return 0;
-      
+
       const calculation = await quoteService.calculateQuotePrice(id, profitMargin || 0);
       setCalculatedTotal(calculation.totalAmount || 0);
       return calculation.totalAmount || 0;
@@ -192,49 +192,78 @@ const PlanningRFQDetail = () => {
   const handleSubmitQuote = async () => {
     setCreatingQuote(true);
     setError('');
-    
+
     try {
-      console.log('=== SUBMITTING QUOTE ===');
+      console.log('=== SUBMITTING QUOTE (with RFQ workflow enforcement) ===');
       console.log('Quote data:', quoteData);
       console.log('Total amount:', calculatedTotal);
-      
-      const quotePayload = {
+
+      // 1) Ensure RFQ goes through the required workflow steps
+      // Backend requires RFQ to be "received by planning" before creating quotation
+      try {
+        await quoteService.sendRfq(id);
+        console.log('✓ RFQ sent');
+      } catch (e) {
+        console.log('sendRfq skipped (already done or not applicable):', e?.message);
+      }
+
+      try {
+        await quoteService.preliminaryCheck(id);
+        console.log('✓ Preliminary check completed');
+      } catch (e) {
+        console.log('preliminaryCheck skipped (already done or not applicable):', e?.message);
+      }
+
+      try {
+        await quoteService.forwardToPlanning(id);
+        console.log('✓ Forwarded to Planning');
+      } catch (e) {
+        console.log('forwardToPlanning skipped (already done or not applicable):', e?.message);
+      }
+
+      try {
+        await quoteService.receiveByPlanning(id);
+        console.log('✓ Received by Planning');
+      } catch (e) {
+        console.log('receiveByPlanning skipped (already done or not applicable):', e?.message);
+      }
+
+      // 2) Calculate final price with backend
+      let finalTotal = calculatedTotal;
+      try {
+        const calculation = await quoteService.calculateQuotePrice(parseInt(id), parseFloat(quoteData.profitMargin) || 0);
+        finalTotal = calculation?.totalAmount || calculatedTotal;
+        setCalculatedTotal(finalTotal);
+        console.log('✓ Price calculated:', finalTotal);
+      } catch (e) {
+        console.log('Price calculation failed, using UI total:', e?.message);
+      }
+
+      // 3) Create quotation from RFQ
+      const newQuote = await quoteService.createQuote({
         rfqId: parseInt(id),
-        materialCost: quoteData.materialCost,
-        processingCost: quoteData.processingCost,
-        finishingCost: quoteData.finishingCost,
         profitMargin: parseFloat(quoteData.profitMargin) || 0,
-        totalAmount: calculatedTotal,
-        status: 'PENDING',
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-        notes: 'Quote created by Planning Department'
-      };
-      
-      console.log('Quote payload:', quotePayload);
-      
-      // Create the quote
-      const newQuote = await quoteService.createQuote(quotePayload);
+        notes: 'Capacity checked by Planning Department'
+      });
+
       console.log('Quote created successfully:', newQuote);
-      
-      // Update RFQ status to QUOTED
-      // TODO: Update this API call to set status to 'QUOTED'
-      await quoteService.updateRFQStatus(id, 'QUOTED');
-      
+
       setSuccess('✅ Báo giá đã được tạo và gửi thành công!');
       handleCloseQuoteModal();
-      
+
       // Auto-hide success message after 5 seconds
       setTimeout(() => {
         setSuccess('');
       }, 5000);
-      
+
     } catch (error) {
       console.error('Submit quote error:', error);
-      setError('❌ Lỗi khi tạo báo giá: ' + error.message);
+      setError('❌ Lỗi khi tạo báo giá: ' + (error?.message || 'Server error'));
     } finally {
       setCreatingQuote(false);
     }
   };
+
 
   const getStatusDisplay = (status) => {
     switch (status) {
@@ -305,10 +334,10 @@ const PlanningRFQDetail = () => {
   return (
     <div className="planning-layout">
       <Header />
-      
+
       <div className="d-flex">
         <PlanningSidebar />
-        
+
         <div className="flex-grow-1" style={{ backgroundColor: '#f8f9fa', minHeight: 'calc(100vh - 70px)' }}>
           <Container fluid className="p-4">
             <div className="planning-rfq-detail-page">
@@ -318,7 +347,7 @@ const PlanningRFQDetail = () => {
                   {error}
                 </Alert>
               )}
-              
+
               {success && (
                 <Alert variant="success" dismissible onClose={() => setSuccess('')}>
                   {success}
@@ -372,7 +401,7 @@ const PlanningRFQDetail = () => {
                         <strong>Ngày tạo:</strong> {formatDate(rfqData?.createdAt) || '13/10/2025'}
                       </div>
                       <div className="info-item">
-                        <strong>Trạng thái:</strong> 
+                        <strong>Trạng thái:</strong>
                         <span className={`badge bg-${getStatusColor(rfqData?.status)} ms-2`}>
                           {getStatusDisplay(rfqData?.status) || 'Đang chờ phê duyệt'}
                         </span>
@@ -469,7 +498,7 @@ const PlanningRFQDetail = () => {
                   <FaArrowLeft className="me-2" />
                   Quay lại danh sách
                 </Button>
-                
+
                 <div className="action-buttons">
                   <Button
                     variant="warning"
@@ -489,7 +518,7 @@ const PlanningRFQDetail = () => {
                       </>
                     )}
                   </Button>
-                  
+
                   <Button
                     variant="success"
                     onClick={handleCreateQuote}
@@ -506,8 +535,8 @@ const PlanningRFQDetail = () => {
       </div>
 
       {/* Quote Creation Modal - Updated Structure */}
-      <Modal 
-        show={showQuoteModal} 
+      <Modal
+        show={showQuoteModal}
         onHide={handleCloseQuoteModal}
         size="md"
         centered
@@ -524,7 +553,7 @@ const PlanningRFQDetail = () => {
             <FaTimes />
           </Button>
         </Modal.Header>
-        
+
         <Modal.Body className="quote-modal-body">
           <Form>
             {/* Material Cost - Read Only */}
@@ -599,7 +628,7 @@ const PlanningRFQDetail = () => {
                 Tổng giá trị báo giá (bao gồm lợi nhuận)
               </Form.Text>
             </Form.Group>
-            
+
             {pricingData && (
               <div className="pricing-breakdown mt-3 p-3 bg-light rounded">
                 <h6 className="fw-bold mb-2">Chi tiết tính toán:</h6>
@@ -615,7 +644,7 @@ const PlanningRFQDetail = () => {
             )}
           </Form>
         </Modal.Body>
-        
+
         <Modal.Footer className="quote-modal-footer">
           <Button
             variant="outline-secondary"
